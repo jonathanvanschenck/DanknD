@@ -12,11 +12,17 @@ log = function(charname,msgtxt) {
   scrolldown();
 };
 
-render = function(html, clear_all) {
+render = function(object_list, clear_all) {
   if (clear_all) {
     logtag.empty();
   }
-  logtag.append(html);
+  object_list.map(function (d) {
+    let parent = logtag;
+    if (d.dest_id) {
+      parent = $("#"+d.dest_id);
+    }
+    parent.append(d.html)
+  })
   scrolldown();
 };
 
@@ -39,7 +45,7 @@ var user_number = $("#user-number")[0].value;
 var user_name = $("#user-name")[0].value;
 
 socket.on('connect', function() {
-  socket.emit('join', {room: room_number})
+  socket.emit('join', {gameid: room_number})
 
   // Allow posts with server connection
   $('#post-button').toggleClass('btn-success',true)
@@ -63,8 +69,8 @@ socket.on('log', function(msg) {
   console.log(msg);
 });
 
-socket.on('render_posts', function(msg) {
-  render(msg.posts, msg.clear_all);
+socket.on('render_objects', function(msg) {
+  render(msg.object_list, msg.clear_all);
 });
 
 postToServer = function (speaker,body) {

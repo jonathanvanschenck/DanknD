@@ -19,6 +19,7 @@
   </ul>
 
   <p>Nuke All Posts: <a href="{{ url_for('game.nuke_posts', gameid=game.id) }}">Click Here</a></p>
+  <p>Add New Chapter: <a href="{{ url_for('game.create_chapter', gameid=game.id) }}">Click Here</a></p>
 
   <div id ="log" class="container">
   </div>
@@ -33,10 +34,10 @@
       <input type="hidden" id="user-name" name="user-name" value="{{ user.username }}">
       <div class="row no-gutter">
         <div class="col-md-4">
-          <div style="display: inline;"> </div>
+          <div style="display: inline;">: </div>
           {% for u in [game.owner] + game.players %}
             <div class="is-typing" id="{{ u.username }}-is-typing" style="display: none;">
-              {{ u.username }} is typing . . . 
+              {{ u.username }} is typing . . .
             </div>
           {% endfor %}
         </div>
