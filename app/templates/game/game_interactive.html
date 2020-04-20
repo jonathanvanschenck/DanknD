@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}{{ game.id }} : {{ game.name }}{% endblock %}
+
+{% block _content %}
+  <h1>This is Game {{ game.id }} : '{{ game.name }}'</h1>
+  <p>Owner: {{ game.owner.username }}</p>
+  Players:<ul>
+    {% for player in game.players%}
+      <li>{{ player.username }}</li>
+    {% endfor %}
+  </ul>
+  Characters:<ul>
+    {% for character in game.characters%}
+    {% if character.visible or game in user.owned_games or character in user.owned_characters %}
+      <li>{{ character.name }}</li>
+    {% endif %}
+    {% endfor %}
+  </ul>
+
+  <p>Nuke All Posts: <a href="{{ url_for('game.nuke_posts', gameid=game.id) }}">Click Here</a></p>
+
+  <div id ="log" class="container">
+  </div>
+{% endblock %}
+
+{% block _footer %}
+  <div id="post-container">
+    <form class="form" action="" method="" role="form" id="post-form" onsubmit="attemptpost();return false">
+      <!-- hidden token thing -->
+      <input type="hidden" id="room-number" name="room-number" value="{{ game.id }}">
+      <input type="hidden" id="user-number" name="user-number" value="{{ user.id }}">
+      <input type="hidden" id="user-name" name="user-name" value="{{ user.username }}">
+      <div class="row no-gutter">
+        <div class="col-md-4">
+          <div style="display: inline;"> </div>
+          {% for u in [game.owner] + game.players %}
+            <div class="is-typing" id="{{ u.username }}-is-typing" style="display: none;">
+              {{ u.username }} is typing . . . 
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="row no-gutter">
+        <div class="col-md-4">
+          <div class="form-group">
+            <textarea id="post-body" name="post-body" class="form-control" required></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="row no-gutter">
+        <div class="col-md-3">
+          <div class="form-group">
+            <!-- <label class="control-label" for="speaker">Speaker</label> -->
+            <select class="form-control" name="speaker" id="speaker">
+              <option value="Narrator" selected>Narrator</option>
+              {% for val in option_list %}
+                <option value="{{ val }}">{{ val }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="col-md-1">
+          <input id="post-button" class="btn btn-warning" type="submit" name="post-button" value="Post">
+        </div>
+      </div>
+
+    </form>
+  </div>
+{% endblock %}
+
+{% block _scripts %}
+  <script src="{{ url_for('static', filename='socketio/socketio-2.3.0.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/game_setup.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block _content %}
+    <h1>Index</h1>
+    <p><a href="{{ url_for('auth.login') }}">User</a></p>
+    <p><a href="{{ url_for('game.example') }}">Game</a></p>
+{% endblock %}
+
+<!--
+{% block _scripts %}
+    <script type="text/js" scr="{{ url_for('static', filename='jquery/jquery-3.4.1.min.js') }}">
+    <script type="text/js" scr="{{ url_for('static', filename='socketio/socketio-2.3.0.js') }}">
+    <script type="text/js" scr="{{ url_for('static', filename='js/game_setup.js') }}">
+    <script type="text/js" scr="{{ url_for('static', filename='js/chat.js') }}">
+{% endblock %}
+-->

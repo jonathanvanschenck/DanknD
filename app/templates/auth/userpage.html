@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile{% endblock %}
+
+{% block _content %}
+    <h1>Hello, {{ user.username }}</h1>
+    Owned Games:<ul>
+      {% for g in user.owned_games %}
+        <li>
+          <a href="{{ url_for('game.game', gameid=g.id) }}">{{ g }}</a>
+          <a href="{{ url_for('game.delete_game', gameid=g.id) }}" style="color: red;">[Delete]</a>
+        </li>
+      {% endfor %}
+    </ul>
+    Joined Games:<ul>
+      {% for g in user.joined_games %}
+        <li><a href="{{ url_for('game.game', gameid=g.id) }}">{{ g }}</a></li>
+      {% endfor %}
+    </ul>
+    Characters:<ul>
+      {% for c in user.owned_characters %}
+        <li>
+          <a href="{{ url_for('game.character', characterid=c.id) }}">{{ c }}</a>
+          <a href="{{ url_for('game.delete_character', characterid=c.id) }}" style="color: red;">[Delete]</a>
+        </li>
+      {% endfor %}
+    </ul>
+    <p><a href="{{ url_for('game.create_game') }}">Create a New Game</a></p>
+    <p><a href="{{ url_for('game.create_character') }}">Create a New Character</a></p>
+{% endblock %}

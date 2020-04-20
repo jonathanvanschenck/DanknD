@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block _content %}
+  <h1>Delete Character {{ character.id }} | {{ character.name }}</h1>
+  <div class="row">
+    <div class="col-md-4">
+      Warning, you are attempting to delete this character. This action
+      cannot be undone. You will loose all data related to the character.
+      If you are sure that this is what you
+      want to do, type the full name of the character below:
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4">
+      {{ wtf.quick_form(form) }}
+    </div>
+  </div>
+{% endblock %}

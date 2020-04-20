@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{ game.id }} : {{ game.name }}{% endblock %}
+
+{% block _content %}
+  <h1>This is Game {{ game.id }} : '{{ game.name }}'</h1>
+  <p>Owner: {{ game.owner.username }}</p>
+  Players:<ul>
+    {% for player in game.players%}
+      <li>{{ player.username }}</li>
+    {% endfor %}
+  </ul>
+  Characters:<ul>
+    {% for character in game.characters%}
+      {% if character.visible %}
+        <li>{{ character.name }}</li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+{% endblock %}
