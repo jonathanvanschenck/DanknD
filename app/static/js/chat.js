@@ -12,18 +12,60 @@ log = function(charname,msgtxt) {
   scrolldown();
 };
 
-render = function(object_list, clear_all) {
+render = function(object_list, clear_all, skip_scroll) {
   if (clear_all) {
     logtag.empty();
   }
   object_list.map(function (d) {
-    let parent = logtag;
-    if (d.dest_id) {
-      parent = $("#"+d.dest_id);
+    if ($("#"+d.id).length == 0 || clear_all) {
+      let parent = logtag;
+      if (d.dest_id) {
+        parent = $("#"+d.dest_id);
+      }
+      parent.append(d.html);
+      // Attach click functionality to scenes
+      if (d.id.indexOf("scene") >= 0) {
+        $("#"+d.id).on("click", function() {
+          let self = $(this).children(".scene-card-body");
+          // get all the posts
+          let posts = self.children(".post-card");
+          if (posts.length == 0) {
+            // Attempt to render posts
+            socket.emit('get_children',{
+              gameid: room_number,
+              json_list: [{
+                objid:+self.attr("id").match(/scene-card-body-id-(\d*)/)[1],
+                type:'scene',
+                depth:1
+              }]
+            })
+          }
+          // console.log(posts);
+        });
+      } else if (d.id.indexOf("chapter") >= 0) {
+        $("#"+d.id).on("click", function() {
+          let self = $(this).children(".chapter-card-body");
+          // get all the posts
+          let scenes = self.children(".scene-card");
+          if (scenes.length == 0) {
+            // Attempt to render scene
+            socket.emit('get_children',{
+              gameid: room_number,
+              json_list: [{
+                objid:+self.attr("id").match(/chapter-card-body-id-(\d*)/)[1],
+                type:'chapter',
+                depth:1
+              }]
+            })
+          }
+          // console.log(scenes);
+        });
+      }
     }
-    parent.append(d.html)
   })
-  scrolldown();
+  if (!skip_scroll) {
+    scrolldown();
+  }
 };
 
 attemptpost = function() {
@@ -37,8 +79,9 @@ attemptpost = function() {
 
 
 
-// Socket io stuff
 
+
+// Socket io stuff
 var socket = io("/game");
 var room_number = $("#room-number")[0].value;
 var user_number = $("#user-number")[0].value;
@@ -70,8 +113,9 @@ socket.on('log', function(msg) {
 });
 
 socket.on('render_objects', function(msg) {
-  render(msg.object_list, msg.clear_all);
+  render(msg.object_list, msg.clear_all, msg.skip_scroll);
 });
+
 
 postToServer = function (speaker,body) {
   socket.emit('create_post', {
@@ -81,6 +125,8 @@ postToServer = function (speaker,body) {
     posterid:user_number
   })
 };
+
+
 
 // Is Typing Functionality
 $('#post-body').focusin(function() {

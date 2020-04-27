@@ -2,14 +2,14 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block _content %}
-  <h1>Edit Chapter #{{ game.chapters.index(chapter) + 1 }}
-    for Game '{{ game.name }}'</h1>
+  <h1>Edit Post #{{ post.id }} for Scene '{{ scene.name }}'
+    for Chapter '{{ chapter.name }}' in Game '{{ game.name }}'</h1>
   <div class="row">
     <div class="col-md-4">
       {{ wtf.quick_form(form) }}
     </div>
   </div>
-  <h1>Delete this Chapter</h1>
+  <h1>Delete this Post</h1>
   <div class="row">
     <div class="col-md-4">
       {{ wtf.quick_form(dform) }}

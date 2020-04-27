@@ -1,0 +1,32 @@
+
+.chapter-card {
+  padding: 2px;
+  margin-top: 5px;
+  background-color: #88ff88;
+}
+
+.scene-card {
+  margin: 5px;
+  padding: 2px;
+  background-color: #88ffff;
+}
+
+.post-card {
+  margin: 5px;
+  padding: 2px;
+}
+
+.post-type-narration {
+  background-color: #ffff88;
+}
+.post-text-type-narration {
+  font-style: italic;
+  text-indent: 1em;
+}
+
+.post-type-speech {
+  background-color: #ff8888;
+}
+.post-text-type-speech {
+  text-indent: 1em;
+}

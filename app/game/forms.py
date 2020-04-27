@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, BooleanField,\
                     TextAreaField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, EqualTo
 
 # --- Games ---
 
@@ -39,6 +39,21 @@ class EditSceneForm(FlaskForm):
     scene_name = StringField('Scene Name', validators=[DataRequired()])
     make_current = BooleanField('Make Current')
     submit = SubmitField('Submit')
+
+# --- Posts ----
+
+class EditPostForm(FlaskForm):
+    speaker = SelectField('Speaker', choices=[])
+    body = TextAreaField('Body')
+    submit = SubmitField('Submit')
+
+
+# --- Extras ---
+
+class DeleteCSPForm(FlaskForm):
+    confirm = BooleanField('This cannot be undone, please be sure...',
+                           validators=[DataRequired()])
+    delete = SubmitField('Delete')
 
 # --- Characters ---
 

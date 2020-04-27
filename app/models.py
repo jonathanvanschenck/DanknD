@@ -141,6 +141,11 @@ class Game(db.Model):
             self.current_chapter = last_chapter
         self.current_chapter.ensure_has_current()
 
+    def empty(self):
+        for c in self.chapters:
+            c.empty()
+            db.session.delete(c)
+
 
 class Chapter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -168,16 +173,33 @@ class Chapter(db.Model):
     def __repr__(self):
         return '<Chapter: {0} | {1} for {2}>'.format(self.id,self.name,self.game.name)
 
+    # def to_HTML(self):
+    #     return '''<div class="card md-6 bg-danger chapter-card" id="{outer_id}">
+    #         <div class="card-body chapter-card-body" id="{inner_id}">
+    #             <h2 class="card-title">
+    #                 <span class="text-muted">Chapter: </span>{name}
+    #                 <span style="float: right;">
+    #                     <a href="{url_edit}">Edit</a>
+    #                     <a href="{url_add}">Add Scene</a>
+    #                 </span>
+    #             </h2>
+    #         </div>
+    #     </div>'''.format(
+    #         name = self.name,
+    #         outer_id = self.get_outer_HTML_id(),
+    #         inner_id = self.get_inner_HTML_id(),
+    #         url_edit = url_for('game.chapter', gameid=self.game.id, chapterid=self.id),
+    #         url_add = url_for('game.create_scene', gameid=self.game.id, chapterid=self.id)
+    #     )
+
     def to_HTML(self):
-        return '''<div class="card md-6 bg-danger chapter-card" id="{outer_id}">
-            <div class="card-body chapter-card-body" id="{inner_id}">
-                <h2 class="card-title">
-                    <span class="text-muted">Chapter: </span>{name}
-                    <span style="float: right;">
-                        <a href="{url_edit}">Edit</a>
-                        <a href="{url_add}">Add Scene</a>
-                    </span>
-                </h2>
+        return '''<div class="chapter-card" id="{outer_id}">
+            <div class="chapter-card-body" id="{inner_id}">
+                <span class="text-muted">Chapter: </span>{name}
+                <span style="float: right;">
+                    <a href="{url_edit}">Edit</a>
+                    <a href="{url_add}">Add Scene</a>
+                </span>
             </div>
         </div>'''.format(
             name = self.name,
@@ -201,6 +223,11 @@ class Chapter(db.Model):
                 raise KeyError("Chapter has no scenes") from E
             self.current_scene = last_scene
         db.session.commit()
+
+    def empty(self):
+        for s in self.scenes:
+            s.empty()
+            db.session.delete(s)
 
 
 class Scene(db.Model):
@@ -230,15 +257,30 @@ class Scene(db.Model):
     def __repr__(self):
         return '<Scene: {0} | {1} for {2}>'.format(self.id,self.name,self.chapter.name)
 
+    # def to_HTML(self):
+    #     return '''<div class="card md-6 bg-warning scene-card" id="{outer_id}">
+    #         <div class="card-body scene-card-body" id="{inner_id}">
+    #             <h3 class="card-title">
+    #                 <span class="text-muted">Scene: </span>{name}
+    #                 <span style="float: right;">
+    #                     <a href="{url_edit}">Edit</a>
+    #                 </span>
+    #             </h3>
+    #         </div>
+    #     </div>'''.format(
+    #         name = self.name,
+    #         outer_id = self.get_outer_HTML_id(),
+    #         inner_id = self.get_inner_HTML_id(),
+    #         url_edit = url_for('game.scene', gameid=self.chapter.game.id, chapterid=self.chapter.id, sceneid=self.id)
+    #     )
+
     def to_HTML(self):
-        return '''<div class="card md-6 bg-warning scene-card" id="{outer_id}">
-            <div class="card-body scene-card-body" id="{inner_id}">
-                <h3 class="card-title">
-                    <span class="text-muted">Scene: </span>{name}
-                    <span style="float: right;">
-                        <a href="{url_edit}">Edit</a>
-                    </span>
-                </h3>
+        return '''<div class="scene-card" id="{outer_id}">
+            <div class="scene-card-body" id="{inner_id}">
+                <span class="text-muted">Scene: </span>{name}
+                <span style="float: right;">
+                    <a href="{url_edit}">Edit</a>
+                </span>
             </div>
         </div>'''.format(
             name = self.name,
@@ -252,6 +294,10 @@ class Scene(db.Model):
 
     def get_inner_HTML_id(self):
         return "scene-card-body-id-{}".format(self.id)
+
+    def empty(self):
+        for p in self.posts:
+            db.session.delete(p)
 # ---- Associations ----
 
 class Post(db.Model):
@@ -275,20 +321,47 @@ class Post(db.Model):
     def __repr__(self):
         return '<Post: {0} in scene {1} by {2}>'.format(self.id,self.scene.id,self.poster.username)
 
+    # def to_HTML(self):
+    #     return '''<div class="card md-6 bg-{bgtype} post-card" id="{outer_id}">
+    #         <div class="card-body post-card-body" id="{inner_id}">
+    #             <h5 class="card-title">{speaker} <span class="text-muted">({poster})</span></h5>
+    #             <p class="card-text post-card-text" id="{text_id}">{body}</p>
+    #         </div>
+    #     </div>'''.format(
+    #         speaker = self.speaker,
+    #         bgtype = ["success","info"][self.speaker=="Narrator"],
+    #         poster = self.poster.username,
+    #         body = self.body,
+    #         outer_id = self.get_outer_HTML_id(),
+    #         inner_id = self.get_inner_HTML_id(),
+    #         text_id = self.get_text_HTML_id()
+    #     )
+
     def to_HTML(self):
-        return '''<div class="card md-6 bg-{bgtype} post-card" id="{outer_id}">
-            <div class="card-body post-card-body" id="{inner_id}">
-                <h5 class="card-title">{speaker} <span class="text-muted">({poster})</span></h5>
-                <p class="card-text post-card-text" id="{text_id}">{body}</p>
+        try:
+            sid = self.scene.id
+            cid = self.scene.chapter.id
+            gid = self.scene.chapter.game.id
+            edit_url = url_for('game.post',gameid=gid,chapterid=cid,sceneid=sid,postid=self.id)
+        except AttributeError:
+            edit_url = "#"
+        return '''<div class="post-card post-type-{type}" id="{outer_id}">
+            <div class="post-card-body" id="{inner_id}">
+                <div class="post-card-title">
+                    {speaker} <span class="text-muted">({poster})</span>
+                    <span style="float: right;"><a href="{edit_url}">Edit</a></span>
+                </div>
+                <p class="post-card-text post-text-type-{type}" id="{text_id}">{body}</p>
             </div>
         </div>'''.format(
             speaker = self.speaker,
-            bgtype = ["success","info"][self.speaker=="Narrator"],
+            type = ["speech","narration"][self.speaker=="Narrator"],
             poster = self.poster.username,
             body = self.body,
             outer_id = self.get_outer_HTML_id(),
             inner_id = self.get_inner_HTML_id(),
-            text_id = self.get_text_HTML_id()
+            text_id = self.get_text_HTML_id(),
+            edit_url = edit_url
         )
 
     def get_outer_HTML_id(self):

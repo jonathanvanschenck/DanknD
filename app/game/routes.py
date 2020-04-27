@@ -3,18 +3,19 @@ from flask_login import current_user, login_required
 
 from app import db
 from app.game import bp
-from app.models import Game, Character, Chapter, Scene
+from app.models import Game, Character, Chapter, Scene, Post
 from app.game.forms import CreateGameForm, DeleteGameForm, CreateCharacterForm,\
                             DeleteCharacterForm, EditCharacterForm,\
                             CreateChapterForm, EditChapterForm,\
-                            CreateSceneForm, EditSceneForm
+                            CreateSceneForm, EditSceneForm,\
+                            EditPostForm,\
+                            DeleteCSPForm
 
 @bp.route('/example')
 def example():
     return "This Works too!"
 
 # --- Games ---
-
 
 @bp.route('/game/<gameid>')
 def game(gameid):
@@ -40,9 +41,9 @@ def nuke_posts(gameid):
             if i != 0:
                 db.session.delete(c)
         db.session.commit()
+        g.chapters[0].ensure_has_current()
         flash('Posts nuked')
     return redirect(url_for('game.game', gameid=gameid))
-
 
 @login_required
 @bp.route('/create_game', methods=['GET', 'POST'])
@@ -116,7 +117,8 @@ def chapter(gameid,chapterid):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = EditChapterForm()
-    if form.validate_on_submit():
+    dform = DeleteCSPForm()
+    if form.submit.data and form.validate_on_submit():
         chapter.name = form.chapter_name.data
         if form.make_current:
             game.current_chapter = chapter
@@ -124,10 +126,24 @@ def chapter(gameid,chapterid):
         else:
             db.session.commit()
         return redirect(url_for('game.game', gameid=gameid))
+    elif dform.delete.data and dform.validate_on_submit():
+        chapter.empty()
+        db.session.delete(chapter)
+        if len(game.chapters) == 0:
+            c = Chapter(name="1",game=game)
+            db.session.add(c)
+            game.current_chapter = c
+            s = Scene(name="1",chapter=c)
+            db.session.add(s)
+            c.current_scene = s
+        db.session.commit()
+        return redirect(url_for('game.game', gameid=gameid))
     else:
         form.chapter_name.data = chapter.name
         form.make_current.data = chapter.is_current
-    return render_template('game/chapter.html', form=form, game=game, chapter=chapter)
+        dform.confirm.data = False
+    return render_template('game/chapter.html', form=form, dform=dform,
+                           game=game, chapter=chapter)
 
 # --- Scene ---
 
@@ -159,18 +175,60 @@ def scene(gameid,chapterid,sceneid):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = EditSceneForm()
-    if form.validate_on_submit():
+    dform = DeleteCSPForm()
+    if form.submit.data and form.validate_on_submit():
         scene.name = form.scene_name.data
         if form.make_current:
             chapter.current_scene = scene
         db.session.commit()
         return redirect(url_for('game.game', gameid=gameid))
+    elif dform.delete.data and dform.validate_on_submit():
+        scene.empty()
+        db.session.delete(scene)
+        if len(chapter.scenes) == 0:
+            s = Scene(name="1",chapter=chapter)
+            db.session.add(s)
+            chapter.current_scene = s
+        db.session.commit()
+        return redirect(url_for('game.game', gameid=gameid))
     else:
         form.scene_name.data = scene.name
         form.make_current.data = scene.is_current
-    return render_template('game/scene.html', form=form, game=game, chapter=chapter, scene=scene)
+        dform.confirm.data = False
+    return render_template('game/scene.html', form=form, dform=dform,
+                           game=game, chapter=chapter, scene = scene)
 
+# ---- Posts -----
 
+@login_required
+@bp.route('/game/<gameid>/chapter/<chapterid>/scene/<sceneid>/post/<postid>', methods=['GET', 'POST'])
+def post(gameid,chapterid,sceneid,postid):
+    game = Game.query.get_or_404(gameid)
+    chapter = Chapter.query.get_or_404(chapterid)
+    scene = Scene.query.get_or_404(sceneid)
+    post = Post.query.get_or_404(postid)
+    if not game in current_user.owned_games and post.poster != current_user.username:
+        flash('Naughty!')
+        return redirect(url_for('front.index'))
+    form = EditPostForm()
+    dform = DeleteCSPForm()
+    form.speaker.choices = [("Narrator", "Narrator")]\
+                            + [(c.name,c.name) for c in game.characters if c.player is current_user]
+    if form.submit.data and form.validate_on_submit():
+        post.speaker = form.speaker.data
+        post.body = form.body.data
+        db.session.commit()
+        return redirect(url_for('game.game', gameid=gameid))
+    elif dform.delete.data and dform.validate_on_submit():
+        db.session.delete(post)
+        db.session.commit()
+        return redirect(url_for('game.game', gameid=gameid))
+    else:
+        form.speaker.data = post.speaker
+        form.body.data = post.body
+        dform.confirm.data = False
+    return render_template('game/post.html', form=form, dform = dform, game = game,
+                           chapter = chapter, scene = scene, post = post)
 
 
 # --- Characters ----
