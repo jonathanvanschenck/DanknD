@@ -8,8 +8,8 @@
 {% block title %}{{ game.id }} : {{ game.name }}{% endblock %}
 
 {% block _content %}
-  <h1>This is Game {{ game.id }} : '{{ game.name }}'</h1>
-  <p>Owner: {{ game.owner.username }}</p>
+  <h1>{{ game.name }}</h1>
+  <p class="text-muted">Hosted By: {{ game.owner.username }}</p>
   Players:<ul>
     {% for player in game.players%}
       <li>{{ player.username }}</li>
@@ -23,7 +23,7 @@
     {% endfor %}
   </ul>
 
-  <p>Nuke All Posts: <a href="{{ url_for('game.nuke_posts', gameid=game.id) }}">Click Here</a></p>
+  <!-- <p>Nuke All Posts: <a href="{{ url_for('game.nuke_posts', gameid=game.id) }}">Click Here</a></p> -->
   <p>Add New Chapter: <a href="{{ url_for('game.create_chapter', gameid=game.id) }}">Click Here</a></p>
 
   <div id ="log" class="container">

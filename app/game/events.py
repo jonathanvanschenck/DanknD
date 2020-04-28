@@ -8,7 +8,7 @@ from app.game.roll_parser import roll_msg
 
 # ---- Helper Functions ----
 
-def _pyobj_to_obj_list(object, result_list, depth):
+def _pyobj_to_obj_list(object, result_list, depth, user = None):
     json = {}
     try:
         json['dest_id'] = object.scene.get_inner_HTML_id()
@@ -19,7 +19,7 @@ def _pyobj_to_obj_list(object, result_list, depth):
     except AttributeError:
         pass
     json.update({
-        "html" : object.to_HTML(),
+        "html" : object.to_HTML(user),
         "id" : object.get_outer_HTML_id()
     })
     result_list.append(json)
@@ -34,14 +34,14 @@ def _pyobj_to_obj_list(object, result_list, depth):
         except AttributeError:
             pass
         for c in child_list:
-            _pyobj_to_obj_list(c, result_list, depth = depth-1)
+            _pyobj_to_obj_list(c, result_list, depth = depth-1, user = user)
     return
 
 def json_to_object(json):
     model = {"post":Post,"chapter":Chapter,"scene":Scene}[json['type'].lower()]
     return model.query.get(json['objid'])
 
-def generate_obj_list(json_list):
+def generate_obj_list(json_list, user = None):
     """json_list = [json,json,...]
     json = {"objid":int,"type":str,"recursive":bool,depth:int}
       objid: int used by model.query.get() to pull sqlalchemy object
@@ -61,7 +61,8 @@ def generate_obj_list(json_list):
         _pyobj_to_obj_list(
             json_to_object(json),
             result_list,
-            depth
+            depth,
+            user
         )
     return result_list
 
@@ -89,7 +90,8 @@ def on_join(msg):
             "objid":c.id,
             "type":"Chapter",
             "depth":["none","all"][int(c is game.current_chapter)]
-        } for c in game.chapters]
+        } for c in game.chapters],
+        current_user
     )
 
     emit('render_objects',
@@ -118,7 +120,7 @@ def on_create_post(msg):
     scene = game.current_scene
     speaker = msg['speaker']
     # Make sure no one hacks the form to speak for another character
-    if not speaker in [c.name for c in current_user.characters]:
+    if not speaker in [c.name for c in current_user.owned_characters]:
         speaker = "Narrator"
     p = Post(
         speaker = speaker,
@@ -128,7 +130,10 @@ def on_create_post(msg):
     )
     db.session.add(p)
     db.session.commit()
-    obj_list = generate_obj_list([{"objid":p.id,"type":"Post","depth":"none"}])
+    obj_list = generate_obj_list(
+        [{"objid":p.id,"type":"Post","depth":"none"}],
+        current_user
+    )
     emit(
             'render_objects',
             {
@@ -150,7 +155,10 @@ def on_set_typing(msg):
 
 @socketio.on('get_children', namespace='/game')
 def on_get_children(msg):
-    obj_list = generate_obj_list(msg['json_list'])
+    obj_list = generate_obj_list(
+        msg['json_list'],
+        current_user
+    )
     emit(
             'render_objects',
             {

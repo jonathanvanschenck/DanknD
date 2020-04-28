@@ -1,8 +1,9 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, BooleanField,\
-                    TextAreaField
+                    TextAreaField, PasswordField
 from wtforms.validators import DataRequired, EqualTo, ValidationError
 
+from app.models import Character, Game
 from app.game.roll_parser import validate_error, roll_msg
 
 # --- Games ---
@@ -16,6 +17,20 @@ class CreateGameForm(FlaskForm):
 class DeleteGameForm(FlaskForm):
     name = StringField('Type Game Name', validators=[DataRequired()])
     submit = SubmitField('Yes, Delete This Game Forever')
+
+class JoinGameForm(FlaskForm):
+    name = StringField('Character Name', validators=[DataRequired()])
+    visible = BooleanField('Make Character Visible?',default=True)
+    password = PasswordField('Game Password')
+    submit = SubmitField('Join')
+
+    def __init__(self,game,*args,**kwargs):
+        FlaskForm.__init__(self,*args,**kwargs)
+        self.game = game
+
+    def validate_password(self,field):
+        if field.data in [c.name for c in self.game.characters]:
+            raise ValidationError("Character Name Already in Use")
 
 # --- Chapters ---
 

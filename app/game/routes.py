@@ -9,7 +9,7 @@ from app.game.forms import CreateGameForm, DeleteGameForm, CreateCharacterForm,\
                             CreateChapterForm, EditChapterForm,\
                             CreateSceneForm, EditSceneForm,\
                             EditPostForm,\
-                            DeleteCSPForm
+                            DeleteCSPForm, JoinGameForm
 
 from app.game.events import set_currents
 
@@ -29,6 +29,25 @@ def game(gameid):
     c = Character.query.filter_by(game=g, player=current_user)
     option_list = [n.name for n in c]
     return render_template('game/game_interactive.html', option_list=option_list, game=g, user=current_user)
+
+@bp.route('/join/<gameid>', methods=['GET', 'POST'])
+@login_required
+def join(gameid):
+    g = Game.query.get_or_404(gameid)
+    if g.has_member(current_user):
+        return redirect(url_for('game.game',gameid=gameid))
+    form = JoinGameForm(g)
+    if form.validate_on_submit():
+        c = Character(name=form.name.data,player=current_user,
+                      game=g,public=form.visible.data)
+        g.players.append(current_user)
+        db.session.add(c)
+        db.session.commit()
+        flash('Welcome to the game!')
+        return redirect(url_for('game.game',gameid=gameid))
+    return render_template('game/join.html', game=g, form=form)
+
+# TODO : add abandon game . . .
 
 @bp.route('/nuke_posts/<gameid>')
 def nuke_posts(gameid):
@@ -72,7 +91,7 @@ def create_game():
 @login_required
 def delete_game(gameid):
     game = Game.query.get_or_404(gameid)
-    if not game in current_user.owned_games:
+    if not game.can_edit(current_user):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = DeleteGameForm()
@@ -100,7 +119,7 @@ def delete_game(gameid):
 @login_required
 def create_chapter(gameid):
     game = Game.query.get_or_404(gameid)
-    if not game in current_user.owned_games:
+    if not game.can_edit(current_user):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = CreateChapterForm()
@@ -120,7 +139,7 @@ def create_chapter(gameid):
 def chapter(gameid,chapterid):
     game = Game.query.get_or_404(gameid)
     chapter = Chapter.query.get_or_404(chapterid)
-    if not game in current_user.owned_games:
+    if not chapter.can_edit(current_user):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = EditChapterForm()
@@ -161,7 +180,7 @@ def chapter(gameid,chapterid):
 def create_scene(gameid,chapterid):
     game = Game.query.get_or_404(gameid)
     chapter = Chapter.query.get_or_404(chapterid)
-    if not game in current_user.owned_games:
+    if not chapter.can_edit(current_user):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = CreateSceneForm()
@@ -181,7 +200,7 @@ def scene(gameid,chapterid,sceneid):
     game = Game.query.get_or_404(gameid)
     chapter = Chapter.query.get_or_404(chapterid)
     scene = Scene.query.get_or_404(sceneid)
-    if not game in current_user.owned_games:
+    if not scene.can_edit(current_user):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = EditSceneForm()
@@ -219,7 +238,7 @@ def post(gameid,chapterid,sceneid,postid):
     chapter = Chapter.query.get_or_404(chapterid)
     scene = Scene.query.get_or_404(sceneid)
     post = Post.query.get_or_404(postid)
-    if not game in current_user.owned_games and post.poster != current_user.username:
+    if not post.can_edit(current_user):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = EditPostForm()

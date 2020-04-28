@@ -86,7 +86,7 @@ class User(UserMixin, db.Model):
 
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), unique = True, index = True)
+    name = db.Column(db.String(128), index = True)
     public = db.Column(db.Boolean, default=True)
 
     player = db.relationship('User', secondary=ownedcharacters,
@@ -103,6 +103,8 @@ class Character(db.Model):
 class Game(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), default="New Game")
+
+    # TODO : add passwords for join
 
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'),nullable=False)
     owner = db.relationship('User',back_populates='owned_games',lazy=True,
@@ -158,7 +160,10 @@ class Game(db.Model):
                 or user.username in [p.username for p in self.players]
 
     def can_edit(self,user):
-        return user.username == self.owner.username
+        try:
+            return user.username == self.owner.username
+        except AttributeError:
+            return False
 
 class Chapter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -186,13 +191,16 @@ class Chapter(db.Model):
     def __repr__(self):
         return '<Chapter: {0} | {1} for {2}>'.format(self.id,self.name,self.game.name)
 
-    def to_HTML(self):
+    def to_HTML(self, user = None):
+        url_edit = url_for('game.chapter', gameid=self.game.id, chapterid=self.id)
+        url_add = url_for('game.create_scene', gameid=self.game.id, chapterid=self.id)
+        edit_tag = '''<span style="float: right;">
+                        <a href="{url_edit}">Edit</a>
+                        <a href="{url_add}">Add Scene</a>
+                    </span>'''.format(url_edit=url_edit,url_add=url_add)
         return '''<div class="chapter-card{current_tag}" id="{outer_id}">
             <span class="text-muted">Chapter: </span>{name}
-            <span style="float: right;">
-                <a href="{url_edit}">Edit</a>
-                <a href="{url_add}">Add Scene</a>
-            </span>
+            {edit_tag}
             <div class="chapter-card-body" id="{inner_id}">
             </div>
         </div>'''.format(
@@ -200,8 +208,7 @@ class Chapter(db.Model):
             outer_id = self.get_outer_HTML_id(),
             inner_id = self.get_inner_HTML_id(),
             current_tag = [""," is_current"][self.is_current],
-            url_edit = url_for('game.chapter', gameid=self.game.id, chapterid=self.id),
-            url_add = url_for('game.create_scene', gameid=self.game.id, chapterid=self.id)
+            edit_tag = ["",edit_tag][self.can_edit(user)]
         )
 
     def get_outer_HTML_id(self):
@@ -254,16 +261,19 @@ class Scene(db.Model):
     def __repr__(self):
         return '<Scene: {0} | {1} for {2}>'.format(self.id,self.name,self.chapter.name)
 
-    def to_HTML(self):
+    def to_HTML(self, user = None):
+        url_edit = url_for('game.scene', gameid=self.chapter.game.id,
+                            chapterid=self.chapter.id, sceneid=self.id)
+        edit_link = """<span style="float: right;">
+                        <a href="{}">Edit</a>
+                    </span>""".format(url_edit)
         try:
             current = self is self.game.current_scene
         except AttributeError:
             current = False
         return '''<div class="scene-card{current_tag}" id="{outer_id}">
             <span class="text-muted">Scene: </span>{name}
-            <span style="float: right;">
-                <a href="{url_edit}">Edit</a>
-            </span>
+            {edit_link}
             <div class="scene-card-body" id="{inner_id}">
             </div>
         </div>'''.format(
@@ -271,7 +281,7 @@ class Scene(db.Model):
             outer_id = self.get_outer_HTML_id(),
             inner_id = self.get_inner_HTML_id(),
             current_tag = [""," is_current"][current],
-            url_edit = url_for('game.scene', gameid=self.chapter.game.id, chapterid=self.chapter.id, sceneid=self.id)
+            edit_link = ["",edit_link][self.can_edit(user)]
         )
 
     def get_outer_HTML_id(self):
@@ -377,7 +387,7 @@ class Post(db.Model):
 
     def can_edit(self,user):
         try:
-            return user.username == self.poser.username
+            return user.username == self.poster.username
         except AttributeError:
             return False
 

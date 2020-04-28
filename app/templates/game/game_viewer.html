@@ -8,8 +8,13 @@
 {% block title %}{{ game.id }} : {{ game.name }}{% endblock %}
 
 {% block _content %}
-  <h1>This is Game {{ game.id }} : '{{ game.name }}'</h1>
-  <p>Owner: {{ game.owner.username }}</p>
+  <h1>
+    {{ game.name }}
+    <a href="{{ url_for('game.join', gameid=game.id) }}" class="btn btn-warning"style="float: right;">
+      Join Game
+    </a>
+  </h1>
+  <p class="text-muted">Hosted By: {{ game.owner.username }}</p>
   Players:<ul>
     {% for player in game.players%}
       <li>{{ player.username }}</li>
