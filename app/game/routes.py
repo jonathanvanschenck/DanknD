@@ -11,17 +11,21 @@ from app.game.forms import CreateGameForm, DeleteGameForm, CreateCharacterForm,\
                             EditPostForm,\
                             DeleteCSPForm
 
-@bp.route('/example')
-def example():
-    return "This Works too!"
+from app.game.events import set_currents
 
 # --- Games ---
+
+@bp.route('/games')
+def games():
+    game_list = Game.query.all()
+    return render_template("game/games.html", game_list = game_list)
+
 
 @bp.route('/game/<gameid>')
 def game(gameid):
     g = Game.query.get_or_404(gameid)
     if current_user.is_anonymous or ((not current_user in g.players) and (current_user!=g.owner)):
-        return render_template('game/game.html', game=g)
+        return render_template('game/game_viewer.html', game=g)
     c = Character.query.filter_by(game=g, player=current_user)
     option_list = [n.name for n in c]
     return render_template('game/game_interactive.html', option_list=option_list, game=g, user=current_user)
@@ -42,11 +46,12 @@ def nuke_posts(gameid):
                 db.session.delete(c)
         db.session.commit()
         g.chapters[0].ensure_has_current()
+        set_currents(int(gameid))
         flash('Posts nuked')
     return redirect(url_for('game.game', gameid=gameid))
 
-@login_required
 @bp.route('/create_game', methods=['GET', 'POST'])
+@login_required
 def create_game():
     form = CreateGameForm()
     if form.validate_on_submit():
@@ -58,12 +63,13 @@ def create_game():
         db.session.add_all([game,chapter,scene])
         db.session.commit()
         game.ensure_has_current()
+        set_currents(int(game.id))
         flash('Congratulations, you created a game called "{}"!'.format(game.name))
         return redirect(url_for('game.game', gameid = game.id))
     return render_template('game/create_game.html', form=form)
 
-@login_required
 @bp.route('/delete_game/<gameid>', methods=['GET', 'POST'])
+@login_required
 def delete_game(gameid):
     game = Game.query.get_or_404(gameid)
     if not game in current_user.owned_games:
@@ -90,8 +96,8 @@ def delete_game(gameid):
 
 # --- Chapters ---
 
-@login_required
 @bp.route('/game/<gameid>/create_chapter', methods=['GET', 'POST'])
+@login_required
 def create_chapter(gameid):
     game = Game.query.get_or_404(gameid)
     if not game in current_user.owned_games:
@@ -105,11 +111,12 @@ def create_chapter(gameid):
         if form.make_current:
             game.current_chapter = c
         c.ensure_has_current() # has commit
+        set_currents(int(gameid))
         return redirect(url_for('game.game', gameid=gameid))
     return render_template('game/create_chapter.html', form=form, game=game)
 
-@login_required
 @bp.route('/game/<gameid>/chapter/<chapterid>', methods=['GET', 'POST'])
+@login_required
 def chapter(gameid,chapterid):
     game = Game.query.get_or_404(gameid)
     chapter = Chapter.query.get_or_404(chapterid)
@@ -123,6 +130,7 @@ def chapter(gameid,chapterid):
         if form.make_current:
             game.current_chapter = chapter
             chapter.ensure_has_current() # has commit
+            set_currents(int(gameid))
         else:
             db.session.commit()
         return redirect(url_for('game.game', gameid=gameid))
@@ -137,6 +145,7 @@ def chapter(gameid,chapterid):
             db.session.add(s)
             c.current_scene = s
         db.session.commit()
+        set_currents(int(gameid))
         return redirect(url_for('game.game', gameid=gameid))
     else:
         form.chapter_name.data = chapter.name
@@ -147,8 +156,8 @@ def chapter(gameid,chapterid):
 
 # --- Scene ---
 
-@login_required
 @bp.route('/game/<gameid>/chapter/<chapterid>/create_scene', methods=['GET', 'POST'])
+@login_required
 def create_scene(gameid,chapterid):
     game = Game.query.get_or_404(gameid)
     chapter = Chapter.query.get_or_404(chapterid)
@@ -162,11 +171,12 @@ def create_scene(gameid,chapterid):
         if form.make_current:
             chapter.current_scene = s
         db.session.commit()
+        set_currents(int(gameid))
         return redirect(url_for('game.game', gameid=gameid))
     return render_template('game/create_scene.html', form=form, game=game, chapter=chapter)
 
-@login_required
 @bp.route('/game/<gameid>/chapter/<chapterid>/scene/<sceneid>', methods=['GET', 'POST'])
+@login_required
 def scene(gameid,chapterid,sceneid):
     game = Game.query.get_or_404(gameid)
     chapter = Chapter.query.get_or_404(chapterid)
@@ -181,6 +191,7 @@ def scene(gameid,chapterid,sceneid):
         if form.make_current:
             chapter.current_scene = scene
         db.session.commit()
+        set_currents(int(gameid))
         return redirect(url_for('game.game', gameid=gameid))
     elif dform.delete.data and dform.validate_on_submit():
         scene.empty()
@@ -190,6 +201,7 @@ def scene(gameid,chapterid,sceneid):
             db.session.add(s)
             chapter.current_scene = s
         db.session.commit()
+        set_currents(int(gameid))
         return redirect(url_for('game.game', gameid=gameid))
     else:
         form.scene_name.data = scene.name
@@ -200,8 +212,8 @@ def scene(gameid,chapterid,sceneid):
 
 # ---- Posts -----
 
-@login_required
 @bp.route('/game/<gameid>/chapter/<chapterid>/scene/<sceneid>/post/<postid>', methods=['GET', 'POST'])
+@login_required
 def post(gameid,chapterid,sceneid,postid):
     game = Game.query.get_or_404(gameid)
     chapter = Chapter.query.get_or_404(chapterid)
@@ -213,10 +225,10 @@ def post(gameid,chapterid,sceneid,postid):
     form = EditPostForm()
     dform = DeleteCSPForm()
     form.speaker.choices = [("Narrator", "Narrator")]\
-                            + [(c.name,c.name) for c in game.characters if c.player is current_user]
+                            + [(c.name,c.name) for c in game.characters if c.player.username == current_user.username]
     if form.submit.data and form.validate_on_submit():
         post.speaker = form.speaker.data
-        post.body = form.body.data
+        post.body = form.body_rolled#.data
         db.session.commit()
         return redirect(url_for('game.game', gameid=gameid))
     elif dform.delete.data and dform.validate_on_submit():
@@ -233,8 +245,8 @@ def post(gameid,chapterid,sceneid,postid):
 
 # --- Characters ----
 
-@login_required
 @bp.route('/character/<characterid>', methods=['GET', 'POST'])
+@login_required
 def character(characterid):
     c = Character.query.get_or_404(characterid)
     if not c in current_user.owned_characters:
@@ -257,8 +269,8 @@ def character(characterid):
         form.public.data = c.public
     return render_template('game/character.html', form=form, character=c)
 
-@login_required
 @bp.route('/create_character', methods=['GET', 'POST'])
+@login_required
 def create_character():
     form = CreateCharacterForm()
     form.game.choices = [(0, "None")]+[(g.id, g.name) for g in current_user.owned_games+current_user.joined_games]
@@ -272,8 +284,8 @@ def create_character():
         return redirect(url_for('game.character', characterid = c.id))
     return render_template('game/create_character.html', form=form)
 
-@login_required
 @bp.route('/delete_character/<characterid>', methods=['GET', 'POST'])
+@login_required
 def delete_character(characterid):
     c = Character.query.get_or_404(characterid)
     if not c in current_user.owned_characters:

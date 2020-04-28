@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block _styles %}
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/game.css')}}">
+{% endblock %}
+
+
+{% block title %}{{ game.id }} : {{ game.name }}{% endblock %}
+
+{% block _content %}
+  <h1>This is Game {{ game.id }} : '{{ game.name }}'</h1>
+  <p>Owner: {{ game.owner.username }}</p>
+  Players:<ul>
+    {% for player in game.players%}
+      <li>{{ player.username }}</li>
+    {% endfor %}
+  </ul>
+  Characters:<ul>
+    {% for character in game.characters%}
+    {% if character.visible %}
+      <li>{{ character.name }}</li>
+    {% endif %}
+    {% endfor %}
+  </ul>
+
+  <div id ="log" class="container">
+  </div>
+  <input type="hidden" id="room-number" name="room-number" value="{{ game.id }}">
+{% endblock %}
+
+{% block _scripts %}
+  <script src="{{ url_for('static', filename='socketio/socketio-2.3.0.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/game_viewer.js') }}"></script>
+{% endblock %}

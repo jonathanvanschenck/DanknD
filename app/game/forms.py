@@ -1,7 +1,9 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField, BooleanField,\
                     TextAreaField
-from wtforms.validators import DataRequired, EqualTo
+from wtforms.validators import DataRequired, EqualTo, ValidationError
+
+from app.game.roll_parser import validate_error, roll_msg
 
 # --- Games ---
 
@@ -46,6 +48,13 @@ class EditPostForm(FlaskForm):
     speaker = SelectField('Speaker', choices=[])
     body = TextAreaField('Body')
     submit = SubmitField('Submit')
+
+    def validate_body(self, field):
+        try:
+            self.body_rolled = roll_msg(field.data)
+        except SyntaxError as E:
+            raise ValidationError(E.args[0])
+
 
 
 # --- Extras ---

@@ -11,7 +11,7 @@
 {% block navbar %}
   <div id="navbar-container" class="container">
     <a href="{{ url_for('front.index') }}">Home</a>
-    <a href="{{ url_for('game.example') }}">Games</a>
+    <a href="{{ url_for('game.games') }}">Games</a>
     {% if current_user.is_anonymous %}
       <a href="{{ url_for('auth.login') }}">Log In</a>
     {% else %}

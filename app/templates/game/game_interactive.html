@@ -48,7 +48,7 @@
         </div>
       </div>
       <div class="row no-gutter">
-        <div class="col-md-4">
+        <div class="col-md-5">
           <div class="form-group">
             <textarea id="post-body" name="post-body" class="form-control" required></textarea>
           </div>
@@ -56,7 +56,7 @@
       </div>
 
       <div class="row no-gutter">
-        <div class="col-md-3">
+        <div class="col-md-4">
           <div class="form-group">
             <!-- <label class="control-label" for="speaker">Speaker</label> -->
             <select class="form-control" name="speaker" id="speaker">
@@ -79,6 +79,5 @@
 
 {% block _scripts %}
   <script src="{{ url_for('static', filename='socketio/socketio-2.3.0.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/game_setup.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/game_interactive.js') }}"></script>
 {% endblock %}

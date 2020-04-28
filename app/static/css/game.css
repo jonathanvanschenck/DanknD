@@ -1,19 +1,27 @@
+.invisible {
+  display: none;
+}
 
 .chapter-card {
   padding: 2px;
+  padding-bottom: 15px;
   margin-top: 5px;
   background-color: #88ff88;
+  opacity: 0.8;
 }
 
 .scene-card {
   margin: 5px;
   padding: 2px;
+  padding-bottom: 15px;
   background-color: #88ffff;
+  opacity: 0.8;
 }
 
 .post-card {
   margin: 5px;
   padding: 2px;
+  opacity: 0.8;
 }
 
 .post-type-narration {
@@ -29,4 +37,28 @@
 }
 .post-text-type-speech {
   text-indent: 1em;
+}
+
+.is_current {
+  opacity: 1.0;
+}
+
+
+.die-roll {
+  display: inline;
+  background-color: #ffffff99;
+  text-align: center;
+  padding-left: 3px;
+  padding-right: 3px;
+  font-style: normal;
+}
+.die-roll-result {
+  font-weight: bold;
+  display: inline;
+}
+
+.mechanic-name {
+  display: inline;
+  font-style: normal;
+  text-align: center;
 }

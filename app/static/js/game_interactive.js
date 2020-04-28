@@ -4,6 +4,10 @@ scrolldown = function() {
   $("html, body").animate({ scrollTop: $(document).height() }, "slow");
 };
 
+scrollTo = function(jqelement) {
+  $("html, body").animate({ scrollTop: jqelement.offset().top}, "slow")
+}
+
 log = function(charname,msgtxt) {
   let newhtml = $("<div>");
   newhtml.toggleClass("post",true)
@@ -23,50 +27,74 @@ render = function(object_list, clear_all, skip_scroll) {
         parent = $("#"+d.dest_id);
       }
       parent.append(d.html);
-      // Attach click functionality to scenes
-      if (d.id.indexOf("scene") >= 0) {
-        $("#"+d.id).on("click", function() {
-          let self = $(this).children(".scene-card-body");
-          // get all the posts
-          let posts = self.children(".post-card");
-          if (posts.length == 0) {
+      // Attach click functionality to scenes and chapters
+      let regex = d.id.match(/(chapter|scene)-card-id-(\d*)/);
+      if (!!regex) {
+        $("#"+d.id).on("click", function(event) {
+          event.stopPropagation();
+          // get all the children
+          let body = $(this).children("."+regex[1]+"-card-body");
+          let children = body.children();
+          // if children aren't loaded (or aren't visible)
+          if (children.length == 0) {
             // Attempt to render posts
             socket.emit('get_children',{
               gameid: room_number,
               json_list: [{
-                objid:+self.attr("id").match(/scene-card-body-id-(\d*)/)[1],
-                type:'scene',
+                objid:+regex[2],
+                type:regex[1],
                 depth:1
               }]
             })
+          } else {
+            // Toggle body state
+            body.toggleClass('invisible',!body.hasClass('invisible'));
           }
-          // console.log(posts);
         });
-      } else if (d.id.indexOf("chapter") >= 0) {
-        $("#"+d.id).on("click", function() {
-          let self = $(this).children(".chapter-card-body");
-          // get all the posts
-          let scenes = self.children(".scene-card");
-          if (scenes.length == 0) {
-            // Attempt to render scene
-            socket.emit('get_children',{
-              gameid: room_number,
-              json_list: [{
-                objid:+self.attr("id").match(/chapter-card-body-id-(\d*)/)[1],
-                type:'chapter',
-                depth:1
-              }]
-            })
-          }
-          // console.log(scenes);
+      } else {
+        $("#"+d.id).on("click", function(event) {
+          console.log("here");
+          event.stopPropagation();
         });
       }
     }
   })
   if (!skip_scroll) {
-    scrolldown();
+    // scrolldown();
+    scrollTo($(".is_current").last());
   }
 };
+
+// Attach roll validity checking
+check_roll_validity = function(string) {
+  let _string = string.replace(/\s/g,"");
+  if (!(_string[0] === "+" || _string[0] === "-")) {
+    _string = "+" + _string
+  }
+  let list = _string.match(/[+](?!0)[1-9]\d*d(?!0)[1-9]\d*|[+][AD]d(?!0)[1-9]\d*|[+-](?!0)[1-9]\d*(?!d)|[=][-]{0,1}\d*$/g);
+  if (!list) {
+    return false;
+  }
+  return _string.length === list.join("").length
+}
+$('#post-body').on('input', function () {
+  let body = this;
+  let err_msg = [];
+  let error = false;
+  for (let m of body.value.matchAll(/[{]([^}]*)[}]/g)) {
+    console.log(m[1],check_roll_validity(m[1]));
+    if (!check_roll_validity(m[1])) {
+      error = true;
+      err_msg.push("`"+m[1]+"`")
+    }
+  }
+  if (error) {
+    body.setCustomValidity("Invalid Roll Types: "+err_msg.join(", "));
+  } else {
+    body.setCustomValidity("");
+  }
+});
+
 
 attemptpost = function() {
   let postForm = $('#post-form')[0];
@@ -76,9 +104,6 @@ attemptpost = function() {
     $('#post-body')[0].value = "";
   }
 }
-
-
-
 
 
 // Socket io stuff
@@ -116,6 +141,18 @@ socket.on('render_objects', function(msg) {
   render(msg.object_list, msg.clear_all, msg.skip_scroll);
 });
 
+socket.on("modify_currents", function(msg) {
+  // Turn off old currents
+  $(".chapter-card").toggleClass('is_current',false);
+  $(".scene-card").toggleClass('is_current',false);
+  $(".post-card").toggleClass('is_current',false);
+
+  // Turn on currents
+  $("#"+msg.current_chapter_id).toggleClass("is_current",true);
+  $("#"+msg.current_scene_id).toggleClass("is_current",true)
+  $("#"+msg.current_scene_body_id).children().toggleClass("is_current",true);
+});
+
 
 postToServer = function (speaker,body) {
   socket.emit('create_post', {
@@ -125,7 +162,6 @@ postToServer = function (speaker,body) {
     posterid:user_number
   })
 };
-
 
 
 // Is Typing Functionality
