@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block _content %}
+  <h1>Abandon Game '{{ game.name }}'</h1>
+  <div class="row">
+    <div class="col-md-4">
+      <p>
+        By clicking below, you will abandon the game '{{ game.name }}.' Note that
+        by doing so, you will give control of any of your characters to the game
+        owner, and loose all editing rights on posts you have previously made.
+      </p>
+      {{ wtf.quick_form(form) }}
+    </div>
+  </div>
+{% endblock %}

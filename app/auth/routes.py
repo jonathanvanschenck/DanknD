@@ -37,6 +37,7 @@ def logout():
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
+        flash("You are already logged in")
         return redirect(url_for('front.index'))
     form = RegistrationForm()
     if form.validate_on_submit():
@@ -44,7 +45,7 @@ def register():
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash('Congratulations, you are now a registered user!')
+        flash('Account registered, please log in')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', title='Register',
                            form=form)

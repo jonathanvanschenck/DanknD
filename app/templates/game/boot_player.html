@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block _content %}
+  <h1>Boot Player '{{ player.username }}' from Game '{{ game.name }}'</h1>
+  <div class="row">
+    <div class="col-md-4">
+      <p>
+        By clicking below, you will boot {{ player.username }} from the game
+        '{{ game.name }}.' Note that unless you also change the game password,
+        or change the player max value for this game, this user can rejoin the
+        game at any time.
+      </p>
+      {{ wtf.quick_form(form) }}
+    </div>
+  </div>
+{% endblock %}

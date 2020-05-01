@@ -63,6 +63,7 @@ class User(UserMixin, db.Model):
 
     posts = db.relationship('Post', back_populates = 'poster', lazy = True)
 
+
     # backref creates:
     #  sent_DMs
     #  received_DMs
@@ -103,6 +104,10 @@ class Character(db.Model):
 class Game(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), default="New Game")
+    password_hash = db.Column(db.String(128))
+    blurb = db.Column(db.String(128))
+    player_max = db.Column(db.Integer,default=5)
+
 
     # TODO : add passwords for join
 
@@ -156,14 +161,43 @@ class Game(db.Model):
             db.session.delete(c)
 
     def has_member(self,user):
-        return user.username == self.owner.username\
-                or user.username in [p.username for p in self.players]
+        return self.has_player(user) or self.can_edit(user)
+
+    def has_player(self,user):
+        return user.username in [p.username for p in self.players]
 
     def can_edit(self,user):
+        # Checks if a user can edit the game (i.e. is the owner)
         try:
             return user.username == self.owner.username
         except AttributeError:
             return False
+
+    def has_character(self,character):
+        # Checks if a game contains a specificed character
+        return character.id in [c.id for c in self.characters]
+
+    def is_full(self):
+        # Checks if game has reached max player limit
+        return len(self.players) >= self.player_max
+
+    def remove_player(self,player):
+        # Remove player from game, and reasign all characters and posts to the
+        #  game owner
+        character_list = [c for c in player.owned_characters if self.has_character(c)]
+        for c in character_list:
+            c.player = self.owner
+        post_list = [p for p in player.posts if p.in_game(self)]
+        for p in post_list:
+            p.poster = self.owner
+        i = [p.username for p in self.players].index(player.username)
+        self.players.pop(i)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 class Chapter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -224,7 +258,6 @@ class Chapter(db.Model):
             except IndexError as E:
                 raise KeyError("Chapter has no scenes") from E
             self.current_scene = last_scene
-        db.session.commit()
 
     def empty(self):
         for s in self.scenes:
@@ -388,6 +421,12 @@ class Post(db.Model):
     def can_edit(self,user):
         try:
             return user.username == self.poster.username
+        except AttributeError:
+            return False
+
+    def in_game(self,game):
+        try:
+            return game.id == self.game.id
         except AttributeError:
             return False
 

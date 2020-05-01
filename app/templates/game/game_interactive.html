@@ -8,7 +8,22 @@
 {% block title %}{{ game.id }} : {{ game.name }}{% endblock %}
 
 {% block _content %}
-  <h1>{{ game.name }}</h1>
+  <h1>
+    {{ game.name }}
+    {% if game.has_player(current_user) %}
+      <a href="{{ url_for('game.abandon', gameid=game.id) }}" class="btn btn-warning"style="float: right;">
+        Abandon Game
+      </a>
+    {% elif game.can_edit(current_user) %}
+      <a href="{{ url_for('game.edit_game', gameid=game.id) }}" class="btn btn-warning"style="float: right;">
+        Edit Game
+      </a>
+    {% else %}
+      <a href="{{ url_for('game.join', gameid=game.id) }}" class="btn btn-warning"style="float: right;">
+        Join Game
+      </a>
+    {% endif %}
+  </h1>
   <p class="text-muted">Hosted By: {{ game.owner.username }}</p>
   Players:<ul>
     {% for player in game.players%}
@@ -23,7 +38,6 @@
     {% endfor %}
   </ul>
 
-  <!-- <p>Nuke All Posts: <a href="{{ url_for('game.nuke_posts', gameid=game.id) }}">Click Here</a></p> -->
   <p>Add New Chapter: <a href="{{ url_for('game.create_chapter', gameid=game.id) }}">Click Here</a></p>
 
   <div id ="log" class="container">

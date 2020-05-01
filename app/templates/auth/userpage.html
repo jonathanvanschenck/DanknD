@@ -8,7 +8,7 @@
       {% for g in user.owned_games %}
         <li>
           <a href="{{ url_for('game.game', gameid=g.id) }}">{{ g }}</a>
-          <a href="{{ url_for('game.delete_game', gameid=g.id) }}" style="color: red;">[Delete]</a>
+          <a href="{{ url_for('game.edit_game', gameid=g.id) }}" style="color: red;">[Edit]</a>
         </li>
       {% endfor %}
     </ul>

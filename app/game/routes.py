@@ -3,13 +3,14 @@ from flask_login import current_user, login_required
 
 from app import db
 from app.game import bp
-from app.models import Game, Character, Chapter, Scene, Post
-from app.game.forms import CreateGameForm, DeleteGameForm, CreateCharacterForm,\
+from app.models import Game, Character, Chapter, Scene, Post, User
+from app.game.forms import CreateGameForm, EditGameForm, CreateCharacterForm,\
                             DeleteCharacterForm, EditCharacterForm,\
                             CreateChapterForm, EditChapterForm,\
                             CreateSceneForm, EditSceneForm,\
                             EditPostForm,\
-                            DeleteCSPForm, JoinGameForm
+                            ConfirmDeleteForm, ModifyPasswordForm,\
+                            JoinGameForm
 
 from app.game.events import set_currents
 
@@ -36,6 +37,9 @@ def join(gameid):
     g = Game.query.get_or_404(gameid)
     if g.has_member(current_user):
         return redirect(url_for('game.game',gameid=gameid))
+    if g.is_full():
+        flash("That game is already full!")
+        return redirect(url_for('game.game',gameid=gameid))
     form = JoinGameForm(g)
     if form.validate_on_submit():
         c = Character(name=form.name.data,player=current_user,
@@ -47,71 +51,81 @@ def join(gameid):
         return redirect(url_for('game.game',gameid=gameid))
     return render_template('game/join.html', game=g, form=form)
 
-# TODO : add abandon game . . .
-
-@bp.route('/nuke_posts/<gameid>')
-def nuke_posts(gameid):
+@bp.route('/game/<gameid>/abandon', methods=['GET', 'POST'])
+@login_required
+def abandon(gameid):
+    return remove(gameid,user=current_user,boot=False)
+@bp.route('/game/<gameid>/boot/<userid>', methods=['GET', 'POST'])
+@login_required
+def boot(gameid,userid):
+    user = User.query.get_or_404(userid)
+    return remove(gameid,user=user,boot=True)
+def remove(gameid,user,boot):
     g = Game.query.get_or_404(gameid)
-    if current_user.is_anonymous or ((not current_user in g.players) and (current_user!=g.owner)):
-        flash("You can't do that...")
-    else:
-        for i,c in enumerate(g.chapters):
-            for j,s in enumerate(c.scenes):
-                for p in s.posts:
-                    db.session.delete(p)
-                if i != 0 or j != 0:
-                    db.session.delete(s)
-            if i != 0:
-                db.session.delete(c)
+    if not g.has_player(user):
+        return redirect(url_for('game.game',gameid=gameid))
+    form = ConfirmDeleteForm()
+    form.delete.label.text = ["Abandon","Boot"][boot]
+    if form.validate_on_submit():
+        g.remove_player(user)
         db.session.commit()
-        g.chapters[0].ensure_has_current()
-        set_currents(int(gameid))
-        flash('Posts nuked')
-    return redirect(url_for('game.game', gameid=gameid))
+        return redirect(url_for('game.game',gameid=gameid))
+    return render_template('game/'+ ["abandon","boot_player"][boot] +'.html', game=g,
+                           form=form, player=user)
 
 @bp.route('/create_game', methods=['GET', 'POST'])
 @login_required
 def create_game():
     form = CreateGameForm()
     if form.validate_on_submit():
-        game = Game(name=form.game_name.data, owner=current_user)
+        game = Game(name=form.game_name.data, owner=current_user,
+                    blurb=form.blurb.data,player_max=form.get_player_max())
+        game.set_password(form.password.data)
         chapter = Chapter(name=form.chapter_name.data, game=game)
-        # game.current_chapter = chapter
         scene = Scene(name=form.chapter_name.data, chapter=chapter)
-        # chapter.current_scene = scene
         db.session.add_all([game,chapter,scene])
-        db.session.commit()
         game.ensure_has_current()
+        db.session.commit()
         set_currents(int(game.id))
         flash('Congratulations, you created a game called "{}"!'.format(game.name))
         return redirect(url_for('game.game', gameid = game.id))
     return render_template('game/create_game.html', form=form)
 
-@bp.route('/delete_game/<gameid>', methods=['GET', 'POST'])
+@bp.route('/edit_game/<gameid>', methods=['GET', 'POST'])
 @login_required
-def delete_game(gameid):
+def edit_game(gameid):
     game = Game.query.get_or_404(gameid)
     if not game.can_edit(current_user):
         flash('Naughty!')
         return redirect(url_for('front.index'))
-    form = DeleteGameForm()
-    if form.validate_on_submit():
-        if game.name != form.name.data:
-            flash('Incorrect game name, try again')
-            return redirect(url_for('game.delete_game', gameid=game.id))
-        for chapter in game.chapters:
-            for scene in chapter.scenes:
-                for post in scene.posts:
-                    db.session.delete(post)
-                db.session.delete(scene)
-            db.session.delete(chapter)
-        for DM in game.DMs:
-            db.session.delete(DM)
-        db.session.delete(game)
+    form = EditGameForm(game)
+    player_list = game.players
+    mform = ModifyPasswordForm()
+    dform = ConfirmDeleteForm()
+    if dform.delete.data and dform.validate_on_submit():
+        game.empty() # remove all chapters, scenes, posts, etc
+        for c in game.characters:
+            db.session.delete(c) # remove all characters
+        db.session.delete(game) # remove actual game
         db.session.commit()
-        flash('You deleted the game called "{}"!'.format(form.name.data))
         return redirect(url_for('auth.userpage', username = current_user.username))
-    return render_template('game/delete_game.html', form=form, game=game)
+    elif mform.change.data and mform.validate_on_submit():
+        game.set_password(mform.password.data)
+        db.session.commit()
+        return redirect(url_for('game.game', gameid=gameid))
+    elif form.submit.data and form.validate_on_submit():
+        game.name = form.name.data
+        game.blurb = form.blurb.data
+        game.player_max = form.get_player_max()
+        db.session.commit()
+        return redirect(url_for('game.game', gameid=gameid))
+    else:
+        form.name.data = game.name
+        form.blurb.data = game.blurb
+        form.set_player_max(game.player_max)
+        dform.confirm.data = False
+    return render_template('game/edit_game.html', form=form, mform=mform,
+                           dform=dform, game=game, player_list = player_list)
 
 # --- Chapters ---
 
@@ -129,7 +143,8 @@ def create_chapter(gameid):
         db.session.add_all([c,s])
         if form.make_current:
             game.current_chapter = c
-        c.ensure_has_current() # has commit
+        c.ensure_has_current()
+        db.session.commit()
         set_currents(int(gameid))
         return redirect(url_for('game.game', gameid=gameid))
     return render_template('game/create_chapter.html', form=form, game=game)
@@ -143,12 +158,13 @@ def chapter(gameid,chapterid):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = EditChapterForm()
-    dform = DeleteCSPForm()
+    dform = ConfirmDeleteForm()
     if form.submit.data and form.validate_on_submit():
         chapter.name = form.chapter_name.data
         if form.make_current:
             game.current_chapter = chapter
-            chapter.ensure_has_current() # has commit
+            chapter.ensure_has_current()
+            db.session.commit()
             set_currents(int(gameid))
         else:
             db.session.commit()
@@ -204,7 +220,7 @@ def scene(gameid,chapterid,sceneid):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = EditSceneForm()
-    dform = DeleteCSPForm()
+    dform = ConfirmDeleteForm()
     if form.submit.data and form.validate_on_submit():
         scene.name = form.scene_name.data
         if form.make_current:
@@ -242,7 +258,7 @@ def post(gameid,chapterid,sceneid,postid):
         flash('Naughty!')
         return redirect(url_for('front.index'))
     form = EditPostForm()
-    dform = DeleteCSPForm()
+    dform = ConfirmDeleteForm()
     form.speaker.choices = [("Narrator", "Narrator")]\
                             + [(c.name,c.name) for c in game.characters if c.player.username == current_user.username]
     if form.submit.data and form.validate_on_submit():

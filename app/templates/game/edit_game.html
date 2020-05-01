@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block _content %}
+  <h1>Edit Game #{{ game.id }} : '{{ game.name }}'</h1>
+  <div class="row">
+    <div class="col-md-4">
+      {{ wtf.quick_form(form) }}
+    </div>
+  </div>
+  <h1>Change Password</h1>
+  <div class="row">
+    <div class="col-md-4">
+      <p>Leave password blank to set none.</p>
+      {{ wtf.quick_form(mform) }}
+    </div>
+  </div>
+  <h1 class="text-danger">Manage Players (Danger Zone!)</h1>
+  <div class="row">
+    <div class="col-md-4">
+      {% for player in player_list %}
+        <div>
+          {{ player.username }}
+          <span class="text-danger">
+            <a class="btn btn-warning" href="{{ url_for('game.boot', gameid=game.id, userid=player.id) }}">
+              Boot
+            </a>
+          </span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  <h1 class="text-danger">Delete Game (Danger Zone!)</h1>
+  <div class="row">
+    <div class="col-md-4">
+      Warning, you are attempting to delete this game. This action
+      cannot be undone. You will loose all data related to the game,
+      including posts, DMs and characters. If you are sure that
+      this is what you want to do, carry on . . .
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4">
+      {{ wtf.quick_form(dform) }}
+    </div>
+  </div>
+{% endblock %}

@@ -1,7 +1,12 @@
+#!/usr/bin/env bash
+
 rm app.db
 rm -r migrations
 
 read -s -p "Choose Admin Password: " psword
+echo ""
+read -p "Add more users? (y/N) " yn
+
 
 ./venv/bin/flask db init
 ./venv/bin/flask db migrate -m "Set Up"
@@ -18,3 +23,7 @@ echo "db.session.commit()" >> temp
 cat temp | ./venv/bin/flask shell
 
 rm temp
+
+if [ "$yn" = "y" ] || [ "$yn" = "Y" ]; then
+  ./config/generate_user.sh
+fi

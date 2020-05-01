@@ -85,6 +85,9 @@ def on_join(msg):
     join_room(msg['gameid'])
     emit('log', {'data': 'Joined room: '+msg['gameid']})
     game = Game.query.get(int(msg['gameid']))
+    if game is None:
+        disconnect()
+        return
     obj_list = generate_obj_list(
         [{
             "objid":c.id,

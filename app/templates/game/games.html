@@ -9,7 +9,7 @@
     <div class="card">
       <h3 class="card-title">{{ game.name }}</h3>
       <h4 class="card-title"><span class="text-muted">Hosted by: {{ game.owner.username }}</span></h4>
-      <p class='card-text'>A little blurb will go here eventually . . . </p>
+      <p class='card-text'>{{ game.blurb }}</p>
       <a href="{{ url_for('game.game', gameid=game.id) }}" class="btn btn-warning">View Game</a>
     </div>
   {% endfor %}
