@@ -4,6 +4,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_bootstrap import Bootstrap
 from flask_socketio import SocketIO
+
 from config import Config
 
 #Setup extras
@@ -38,5 +39,6 @@ def create_app(configclass = Config):
     app.register_blueprint(game_bp, url_prefix='/g')
 
     return app
+
 
 from app import models
