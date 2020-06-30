@@ -11,15 +11,15 @@
   <h1>
     {{ game.name }}
     {% if game.has_player(current_user) %}
-      <a href="{{ url_for('game.abandon', gameid=game.id) }}" class="btn btn-warning"style="float: right;">
+      <a href="{{ url_for('game.abandon', gameid=game.id) }}" class="btn btn-warning" style="float: right;">
         Abandon Game
       </a>
     {% elif game.can_edit(current_user) %}
-      <a href="{{ url_for('game.edit_game', gameid=game.id) }}" class="btn btn-warning"style="float: right;">
+      <a href="{{ url_for('game.edit_game', gameid=game.id) }}" class="btn btn-warning" style="float: right;">
         Edit Game
       </a>
     {% else %}
-      <a href="{{ url_for('game.join', gameid=game.id) }}" class="btn btn-warning"style="float: right;">
+      <a href="{{ url_for('game.join', gameid=game.id) }}" class="btn btn-warning" style="float: right;">
         Join Game
       </a>
     {% endif %}

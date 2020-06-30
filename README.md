@@ -9,7 +9,7 @@ A Play-by-Post framework for D&amp;D 5e based on `flask`, `postgres` and `nginx`
 
 ## Running
 ```bash
- $ docker-compose up
+ $ docker-compose up 
 ```
 
 ## Clean up

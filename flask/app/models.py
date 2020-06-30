@@ -232,9 +232,11 @@ class Chapter(db.Model):
                         <a href="{url_edit}">Edit</a>
                         <a href="{url_add}">Add Scene</a>
                     </span>'''.format(url_edit=url_edit,url_add=url_add)
-        return '''<div class="chapter-card{current_tag}" id="{outer_id}">
-            <span class="text-muted">Chapter: </span>{name}
-            {edit_tag}
+        return '''<div class="card chapter-card{current_tag}" id="{outer_id}">
+            <div class="chapter-card-title">
+                <span class="text-muted">Chapter: </span>{name}
+                {edit_tag}
+            </div>
             <div class="chapter-card-body" id="{inner_id}">
             </div>
         </div>'''.format(
@@ -304,9 +306,11 @@ class Scene(db.Model):
             current = self is self.game.current_scene
         except AttributeError:
             current = False
-        return '''<div class="scene-card{current_tag}" id="{outer_id}">
-            <span class="text-muted">Scene: </span>{name}
-            {edit_link}
+        return '''<div class="card scene-card{current_tag}" id="{outer_id}">
+            <div class="scene-card-title">
+                <span class="text-muted">Scene: </span>{name}
+                {edit_link}
+            </div>
             <div class="scene-card-body" id="{inner_id}">
             </div>
         </div>'''.format(
@@ -395,7 +399,7 @@ class Post(db.Model):
             current = self.scene is self.scene.game.current_scene
         except AttributeError:
             current = False
-        return '''<div class="post-card post-type-{type}{current_tag}" id="{outer_id}">
+        return '''<div class="card post-card post-type-{type}{current_tag}" id="{outer_id}">
             <div class="post-card-title">
                 {speaker} <span class="text-muted">({poster})</span>
                 {edit_link}
