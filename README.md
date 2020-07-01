@@ -1,16 +1,14 @@
 # DanknD
 A Play-by-Post framework for D&amp;D 5e based on `flask`, `postgres` and `nginx`
 
-# Production
+# Usage
 ## Set Up
+Usage currently requires `docker-compose`. Simply run:
 ```bash
  $ docker-compose build
+ $ docker-compose up
 ```
-
-## Running
-```bash
- $ docker-compose up 
-```
+If this is your first time (or if you nuked the database as explained in the clean up section), then part of setup will generate a new admin account with the password: "guessme". YOU SHOULD CHANGE THIS IMMEDIATELY, but hey, if you want any old rando to be able to access your admin account, don't let me tell you how to live your life.
 
 ## Clean up
 ```bash
